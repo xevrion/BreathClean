@@ -1,0 +1,31 @@
+{
+  "name": "breathclean",
+  "version": "1.0.0",
+  "private": true,
+  "description": "BreathClean monorepo",
+  "type": "module",
+  "scripts": {
+    "dev:client": "npm --prefix client run dev",
+    "dev:server": "npm --prefix server run dev",
+    "build:client": "npm --prefix client run build",
+    "build:server": "npm --prefix server run build",
+    "lint": "npm --prefix client run lint && npm --prefix server run lint",
+    "lint:client": "npm --prefix client run lint",
+    "lint:server": "npm --prefix server run lint",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,mdx,css}\"",
+    "check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,mdx,css}\"",
+    "check-types:client": "npm --prefix client run check-types",
+    "check-types:server": "npm --prefix server run check-types",
+    "prepare": "husky"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@trivago/prettier-plugin-sort-imports": "^5.2.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.7",
+    "prettier": "^3.8.1",
+    "prettier-plugin-tailwindcss": "^0.7.2"
+  }
+}
