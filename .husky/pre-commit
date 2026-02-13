@@ -1,1 +1,2 @@
+npm run check-types:client && npm run check-types:server
 npx lint-staged
