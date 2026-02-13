@@ -53,7 +53,7 @@ export const googleCallback = async (req: Request, res: Response) => {
   }
 };
 
-export const googleLogout = async (req: Request, res: Response) => {
+export const googleLogout = async (_req: Request, res: Response) => {
   try {
     res.clearCookie("refreshToken");
     return res.redirect("http://localhost:3000");
