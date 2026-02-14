@@ -7,6 +7,10 @@ export interface IPoint {
   coordinates: [number, number]; // [longitude, latitude]
 }
 
+export interface ITravelMode {
+  type: "walking" | "cycling" | "driving";
+}
+
 export interface ILineString {
   type: "LineString";
   coordinates: [number, number][];
@@ -17,7 +21,7 @@ export interface ILineString {
 export interface IRouteOption {
   distance: number; // in km
   duration: number; // in minutes
-
+  travelMode: ITravelMode;
   routeGeometry: ILineString;
 
   // dynamically updated by pollution engine
@@ -30,6 +34,7 @@ export interface IRouteOption {
 export interface IRoute extends Document {
   userId: mongoose.Types.ObjectId;
   name?: string;
+  travelMode: ITravelMode;
 
   from: {
     address: string;

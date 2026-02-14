@@ -416,7 +416,7 @@ export default function HomeMap({ className }: HomeMapProps) {
 
         {/* Floating Overlays */}
         <main
-          className={`pointer-events-none absolute inset-0 z-20 flex h-full w-full flex-col items-start gap-6 px-4 pt-12 transition-opacity duration-700 md:px-8 md:pt-3 lg:flex-row lg:justify-between lg:px-4 ${shouldShowLoader ? "opacity-0" : "opacity-100"}`}
+          className={`pointer-events-none absolute inset-0 z-20 mt-10 flex h-full w-full flex-col items-start gap-6 px-4 pt-16 transition-opacity duration-700 md:px-8 md:pt-3 lg:flex-row lg:justify-between lg:px-4 ${shouldShowLoader ? "opacity-0" : "opacity-100"}`}
         >
           {/* Left Section: Search Card */}
           <div className="pointer-events-auto mt-1 w-full lg:mt-3 lg:max-w-xs xl:max-w-sm">

@@ -15,7 +15,11 @@ export default function middleware(request: NextRequest): NextResponse {
     }
   }
 
-  if (pathname.startsWith("/home") || pathname.startsWith("/profile")) {
+  if (
+    pathname.startsWith("/home") ||
+    pathname.startsWith("/profile") ||
+    pathname.startsWith("/saved-routes")
+  ) {
     if (!isAuthenticated) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
@@ -25,5 +29,10 @@ export default function middleware(request: NextRequest): NextResponse {
 }
 
 export const config = {
-  matcher: ["/login", "/home/:path*", "/profile/:path*"],
+  matcher: [
+    "/login",
+    "/home/:path*",
+    "/profile/:path*",
+    "/saved-routes/:path*",
+  ],
 };
