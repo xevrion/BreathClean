@@ -47,7 +47,7 @@ export const googleCallback = async (req: Request, res: Response) => {
       sameSite: "lax",
       maxAge: 60 * 60 * 24 * 30 * 1000,
     });
-    return res.redirect("http://localhost:3000/home");
+    return res.redirect(`${process.env.CLIENT_REDIRECT_URL}/home`);
   } catch (error) {
     console.log("Error in googleCallback:", error);
     return res.status(500).json({ errorMsg: "Internal server error", error });
@@ -57,7 +57,7 @@ export const googleCallback = async (req: Request, res: Response) => {
 export const googleLogout = async (_req: Request, res: Response) => {
   try {
     res.clearCookie("refreshToken");
-    return res.redirect("http://localhost:3000");
+    return res.redirect(`${process.env.CLIENT_REDIRECT_URL}`);
   } catch (error) {
     console.log("Error in googleLogout:", error);
     return res.status(500).json({ errorMsg: "Internal server error", error });
