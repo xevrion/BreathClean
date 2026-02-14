@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
+import dynamic from "next/dynamic";
+
 import {
   ArrowRight,
   Crosshair,
@@ -10,8 +12,13 @@ import {
   MapPin,
   ShieldCheck,
 } from "lucide-react";
-import mapboxgl from "mapbox-gl";
+import type { Map, MapMouseEvent, Marker } from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
+
+const SearchBox = dynamic(
+  () => import("@mapbox/search-js-react").then((mod) => mod.SearchBox),
+  { ssr: false }
+);
 
 type HomeMapProps = {
   className?: string;
@@ -25,12 +32,14 @@ type LocationData = {
 
 export default function HomeMap({ className }: HomeMapProps) {
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
-  const mapRef = useRef<mapboxgl.Map | null>(null);
+  const mapRef = useRef<Map | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const mapboxglRef = useRef<any>(null);
   const [showRightModal, setShowRightModal] = useState(true);
   const revealTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const markersRef = useRef<{
-    source: mapboxgl.Marker | null;
-    dest: mapboxgl.Marker | null;
+    source: Marker | null;
+    dest: Marker | null;
   }>({ source: null, dest: null });
 
   const mapboxToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "";
@@ -54,6 +63,13 @@ export default function HomeMap({ className }: HomeMapProps) {
   const [isGettingCurrentLocation, setIsGettingCurrentLocation] = useState<
     "source" | "dest" | null
   >(null);
+
+  // Search Box Queries
+  const [sourceQuery, setSourceQuery] = useState("");
+  const [destQuery, setDestQuery] = useState("");
+
+  // Sync queries with locations (removed useEffects to avoid lint errors/loops)
+  // We will manually sync state when setting locations.
 
   const mapStatusLabel = useMemo(() => {
     if (mapStatus === "no-token") return "Mapbox token missing";
@@ -85,7 +101,8 @@ export default function HomeMap({ className }: HomeMapProps) {
   // Helper to update markers
   const updateMarker = (type: "source" | "dest", lng: number, lat: number) => {
     const map = mapRef.current;
-    if (!map) return;
+    const mapboxgl = mapboxglRef.current;
+    if (!map || !mapboxgl) return;
 
     // Remove existing marker if any
     if (markersRef.current[type]) {
@@ -117,9 +134,11 @@ export default function HomeMap({ className }: HomeMapProps) {
 
         if (type === "source") {
           setSourceLocation({ lng: longitude, lat: latitude, address });
+          setSourceQuery(address);
           updateMarker("source", longitude, latitude);
         } else {
           setDestLocation({ lng: longitude, lat: latitude, address });
+          setDestQuery(address);
           updateMarker("dest", longitude, latitude);
         }
 
@@ -151,107 +170,135 @@ export default function HomeMap({ className }: HomeMapProps) {
       return;
     }
 
-    mapboxgl.accessToken = mapboxToken;
-
     let isCancelled = false;
-    const map = new mapboxgl.Map({
-      container,
-      style: "mapbox://styles/mapbox/light-v11",
-      center: [0, 0],
-      zoom: 2,
-      attributionControl: true,
-    });
+    const cleanupRef = { current: () => {} };
 
-    mapRef.current = map;
-    map.addControl(
-      new mapboxgl.NavigationControl({ showCompass: false }),
-      "bottom-right"
-    );
+    const initMap = async () => {
+      try {
+        const mapboxglModule = await import("mapbox-gl");
+        const mapboxgl = mapboxglModule.default;
+        mapboxglRef.current = mapboxgl;
 
-    const handleMapLoad = () => setMapStatus("ready");
-    const handleMapError = () => {
-      setMapStatus("error");
-      setMapError("Map failed to load. Check your token or network.");
-      setIsLocating(false);
-    };
+        mapboxgl.accessToken = mapboxToken;
 
-    map.on("load", handleMapLoad);
-    map.on("error", handleMapError);
-
-    const hideRightModal = () => {
-      if (revealTimeoutRef.current) clearTimeout(revealTimeoutRef.current);
-      setShowRightModal(false);
-    };
-    const scheduleShowRightModal = () => {
-      // Only show if NOT picking
-      // We'll handle this in the picking logic
-      if (revealTimeoutRef.current) clearTimeout(revealTimeoutRef.current);
-      revealTimeoutRef.current = setTimeout(() => {
-        setShowRightModal(true);
-      }, 1000);
-    };
-
-    map.on("movestart", hideRightModal);
-    map.on("moveend", scheduleShowRightModal);
-
-    // Initial Geolocation
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          if (isCancelled) return;
-          const { longitude, latitude } = position.coords;
-
-          // Fetch address for current location
-          const address = await reverseGeocode(longitude, latitude);
-          if (isCancelled) return;
-
-          setSourceLocation({ lng: longitude, lat: latitude, address });
-          updateMarker("source", longitude, latitude);
-
-          map.once("moveend", () => {
-            if (!isCancelled) setIsLocating(false);
-          });
-
-          map.flyTo({
-            center: [longitude, latitude],
-            zoom: 13,
-            essential: true,
-          });
-        },
-        (error) => {
-          if (isCancelled) return;
-          setGeoError(error.message || "Location permission was denied.");
-          setIsLocating(false);
-          map.flyTo({ center: [0, 0], zoom: 2 });
-        },
-        { enableHighAccuracy: true, timeout: 8000 }
-      );
-    } else {
-      setTimeout(() => {
         if (isCancelled) return;
-        setGeoError("Geolocation is not supported in this browser.");
-        setIsLocating(false);
-      }, 0);
-    }
 
-    const resize = () => map.resize();
-    window.addEventListener("resize", resize);
+        const map = new mapboxgl.Map({
+          container,
+          style: "mapbox://styles/mapbox/light-v11",
+          center: [0, 0],
+          zoom: 2,
+          attributionControl: true,
+        });
+
+        mapRef.current = map;
+
+        map.addControl(
+          new mapboxgl.NavigationControl({ showCompass: false }),
+          "bottom-right"
+        );
+
+        const handleMapLoad = () => {
+          if (!isCancelled) setMapStatus("ready");
+        };
+
+        const handleMapError = () => {
+          if (!isCancelled) {
+            setMapStatus("error");
+            setMapError("Map failed to load. Check your token or network.");
+            setIsLocating(false);
+          }
+        };
+
+        map.on("load", handleMapLoad);
+        map.on("error", handleMapError);
+
+        const hideRightModal = () => {
+          if (revealTimeoutRef.current) clearTimeout(revealTimeoutRef.current);
+          setShowRightModal(false);
+        };
+        const scheduleShowRightModal = () => {
+          if (revealTimeoutRef.current) clearTimeout(revealTimeoutRef.current);
+          revealTimeoutRef.current = setTimeout(() => {
+            setShowRightModal(true);
+          }, 1000);
+        };
+
+        map.on("movestart", hideRightModal);
+        map.on("moveend", scheduleShowRightModal);
+
+        // Initial Geolocation
+        if (navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(
+            async (position) => {
+              if (isCancelled) return;
+              const { longitude, latitude } = position.coords;
+
+              // Fetch address for current location
+              const address = await reverseGeocode(longitude, latitude);
+              if (isCancelled) return;
+
+              setSourceLocation({ lng: longitude, lat: latitude, address });
+              setSourceQuery(address);
+              updateMarker("source", longitude, latitude);
+
+              map.once("moveend", () => {
+                if (!isCancelled) setIsLocating(false);
+              });
+
+              map.flyTo({
+                center: [longitude, latitude],
+                zoom: 13,
+                essential: true,
+              });
+            },
+            (error) => {
+              if (isCancelled) return;
+              setGeoError(error.message || "Location permission was denied.");
+              setIsLocating(false);
+              map.flyTo({ center: [0, 0], zoom: 2 });
+            },
+            { enableHighAccuracy: true, timeout: 8000 }
+          );
+        } else {
+          setTimeout(() => {
+            if (isCancelled) return;
+            setGeoError("Geolocation is not supported in this browser.");
+            setIsLocating(false);
+          }, 0);
+        }
+
+        const resize = () => map.resize();
+        window.addEventListener("resize", resize);
+
+        cleanupRef.current = () => {
+          window.removeEventListener("resize", resize);
+          map.off("movestart", hideRightModal);
+          map.off("moveend", scheduleShowRightModal);
+          map.off("load", handleMapLoad);
+          map.off("error", handleMapError);
+          map.remove();
+        };
+      } catch (err) {
+        console.error("Error loading mapbox-gl:", err);
+        if (!isCancelled) {
+          setMapStatus("error");
+          setMapError("Failed to load map library.");
+        }
+      }
+    };
+
+    initMap();
 
     return () => {
       isCancelled = true;
-      map.off("movestart", hideRightModal);
-      map.off("moveend", scheduleShowRightModal);
-      map.off("load", handleMapLoad);
-      map.off("error", handleMapError);
-      if (revealTimeoutRef.current) clearTimeout(revealTimeoutRef.current);
+      cleanupRef.current();
 
       // Safe Cleanup
       const markers = markersRef.current;
       if (markers.source) markers.source.remove();
       if (markers.dest) markers.dest.remove();
 
-      window.removeEventListener("resize", resize);
-      map.remove();
       mapRef.current = null;
     };
   }, [mapboxToken, reverseGeocode]);
@@ -262,7 +309,7 @@ export default function HomeMap({ className }: HomeMapProps) {
     const map = mapRef.current;
     if (!map) return;
 
-    const onMapClick = async (e: mapboxgl.MapMouseEvent) => {
+    const onMapClick = async (e: MapMouseEvent) => {
       if (!pickingMode) return;
 
       const { lng, lat } = e.lngLat;
@@ -270,9 +317,11 @@ export default function HomeMap({ className }: HomeMapProps) {
 
       if (pickingMode === "source") {
         setSourceLocation({ lng, lat, address });
+        setSourceQuery(address);
         updateMarker("source", lng, lat);
       } else {
         setDestLocation({ lng, lat, address });
+        setDestQuery(address);
         updateMarker("dest", lng, lat);
       }
 
@@ -387,12 +436,51 @@ export default function HomeMap({ className }: HomeMapProps) {
                 <div className="relative space-y-1">
                   <div className="group relative">
                     <div className="absolute top-1/2 left-3.5 z-10 h-3.5 w-3.5 -translate-y-1/2 rounded-full border-2 border-[#2bee6c] bg-white" />
-                    <input
-                      className="w-full rounded-lg border-transparent bg-slate-50 py-3 pr-3 pl-10 text-sm transition-all outline-none placeholder:text-slate-400 focus:border-[#2bee6c] focus:ring-0 dark:bg-slate-800/50"
+                    <SearchBox
+                      accessToken={mapboxToken}
+                      value={sourceQuery}
+                      onChange={(val: string) => setSourceQuery(val)}
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      onRetrieve={(res: any) => {
+                        if (
+                          !res ||
+                          !Array.isArray(res.features) ||
+                          res.features.length === 0
+                        ) {
+                          return;
+                        }
+                        const feature = res.features[0];
+                        const [lng, lat] = feature.geometry.coordinates;
+                        const address =
+                          feature.properties?.place_name ||
+                          feature.properties?.full_address ||
+                          feature.place_name ||
+                          sourceQuery;
+                        setSourceLocation({
+                          lng,
+                          lat,
+                          address,
+                        });
+                        setSourceQuery(address);
+                        updateMarker("source", lng, lat);
+                        mapRef.current?.flyTo({
+                          center: [lng, lat],
+                          zoom: 14,
+                        });
+                      }}
                       placeholder="Current location..."
-                      type="text"
-                      value={sourceLocation?.address || ""}
-                      readOnly // Let's make it read-only for now if we rely on map picking/geo
+                      options={{ language: "en", limit: 5 }}
+                      theme={{
+                        variables: {
+                          fontFamily: "inherit",
+                          padding: "12px 48px 12px 42px",
+                          borderRadius: "8px",
+                          boxShadow: "none",
+                        },
+                        icons: {
+                          search: '<svg viewBox="0 0 1 1"></svg>',
+                        },
+                      }}
                     />
                     {/* Navigation/Current Location Button */}
                     <button
@@ -422,12 +510,51 @@ export default function HomeMap({ className }: HomeMapProps) {
                     <div className="absolute top-1/2 left-3.5 z-10 flex -translate-y-1/2 items-center justify-center">
                       <MapPin className="h-4 w-4 text-[#2bee6c]" />
                     </div>
-                    <input
-                      className="w-full rounded-lg border-transparent bg-slate-50 py-3 pr-3 pl-10 text-sm transition-all outline-none placeholder:text-slate-400 focus:border-[#2bee6c] focus:ring-0 dark:bg-slate-800/50"
+                    <SearchBox
+                      accessToken={mapboxToken}
+                      value={destQuery}
+                      onChange={(val: string) => setDestQuery(val)}
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      onRetrieve={(res: any) => {
+                        if (
+                          !res ||
+                          !Array.isArray(res.features) ||
+                          res.features.length === 0
+                        ) {
+                          return;
+                        }
+                        const feature = res.features[0];
+                        const [lng, lat] = feature.geometry.coordinates;
+                        const address =
+                          feature.properties?.place_name ||
+                          feature.properties?.full_address ||
+                          feature.place_name ||
+                          destQuery;
+                        setDestLocation({
+                          lng,
+                          lat,
+                          address,
+                        });
+                        setDestQuery(address);
+                        updateMarker("dest", lng, lat);
+                        mapRef.current?.flyTo({
+                          center: [lng, lat],
+                          zoom: 14,
+                        });
+                      }}
                       placeholder="Search destination..."
-                      type="text"
-                      value={destLocation?.address || ""}
-                      readOnly
+                      options={{ language: "en", limit: 5 }}
+                      theme={{
+                        variables: {
+                          fontFamily: "inherit",
+                          padding: "12px 48px 12px 42px",
+                          borderRadius: "8px",
+                          boxShadow: "none",
+                        },
+                        icons: {
+                          search: '<svg viewBox="0 0 1 1"></svg>',
+                        },
+                      }}
                     />
                     {/* Navigation/Current Location Button for Dest */}
                     <button
