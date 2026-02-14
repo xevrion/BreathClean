@@ -23,7 +23,7 @@ export const googleLink = async (_req: Request, res: Response) => {
 export const googleCallback = async (req: Request, res: Response) => {
   try {
     const { code } = req.query;
-    console.log(code);
+
     const response = await simpleGoogleCallback(
       code as string,
       clientId,
@@ -43,8 +43,9 @@ export const googleCallback = async (req: Request, res: Response) => {
     }
     res.cookie("refreshToken", response.tokens.refreshToken, {
       httpOnly: true,
-      secure: true,
-      sameSite: "lax",
+      secure: true, // ✅ REQUIRED for HTTPS
+      sameSite: "none", // ✅ REQUIRED for cross-site
+      path: "/",
       maxAge: 60 * 60 * 24 * 30 * 1000,
     });
     return res.redirect(`${process.env.CLIENT_REDIRECT_URL}/home`);
