@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { AtSign, Globe, Leaf } from "lucide-react";
+import { AtSign, Globe } from "lucide-react";
 
 const footerLinks = {
   "Web App": [

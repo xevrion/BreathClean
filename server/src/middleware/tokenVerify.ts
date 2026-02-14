@@ -5,7 +5,7 @@ export const tokenVerify = (
   req: Request,
   res: Response,
   next: NextFunction
-) => {
+): Response | void => {
   try {
     const token = req.cookies.refreshToken;
     if (!token) {
@@ -16,9 +16,8 @@ export const tokenVerify = (
       process.env.REFRESH_TOKEN_SECRET!
     ) as JwtPayload;
     req.userId = decoded.userId;
-    next();
-  } catch (error) {
-    console.log("Error in tokenVerify:", error);
-    return res.status(500).json({ errorMsg: "Internal server error", error });
+    return next();
+  } catch {
+    return res.status(500).json({ errorMsg: "Internal server error" });
   }
 };

@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 import { Calendar, Mail, MapPin, Shield, User } from "lucide-react";
 
 import type { UserData } from "./types";
@@ -23,7 +25,7 @@ export default function ProfileCard({ user }: { user: UserData }) {
         <div className="-mt-14 flex flex-col items-start gap-4 sm:flex-row sm:items-end">
           <div className="relative">
             {user.picture ? (
-              <img
+              <Image
                 src={user.picture}
                 alt={user.name}
                 className="h-28 w-28 rounded-2xl border-4 border-white object-cover shadow-lg"
