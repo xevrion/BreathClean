@@ -12,7 +12,7 @@ const PORT = process.env.PORT ?? 8000;
 
 app.use(
   cors({
-    origin: ["http://localhost:3000", "https://breathclean.vercel.app"],
+    origin: ["http://localhost:3000", "https://breathe.daemondoc.online"],
     credentials: true,
   })
 );
