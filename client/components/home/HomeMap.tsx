@@ -290,7 +290,11 @@ export default function HomeMap({ className }: HomeMapProps) {
 
     return () => {
       map.off("click", onMapClick);
-      map.getCanvas().style.cursor = "";
+      try {
+        map.getCanvas().style.cursor = "";
+      } catch {
+        // Canvas may already be removed during cleanup
+      }
     };
   }, [pickingMode, reverseGeocode]);
 
