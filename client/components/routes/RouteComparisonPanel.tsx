@@ -85,7 +85,7 @@ export default function RouteComparisonPanel({
         style={isMobile ? { width: "280px", minWidth: "280px" } : undefined}
       >
         {index === 0 && (
-          <div className="absolute top-0 right-0 p-2">
+          <div className="absolute -top-3 right-0 p-2">
             <span className="rounded-full border border-[#2bee6c]/20 bg-[#2bee6c]/10 px-2 py-1 text-[10px] font-bold tracking-tight text-[#2bee6c] uppercase">
               Best for Health
             </span>

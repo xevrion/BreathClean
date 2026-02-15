@@ -300,7 +300,7 @@ const RouteContent = () => {
   };
 
   return (
-    <div className="font-display flex h-screen flex-col overflow-hidden bg-[#f6f8f6] text-slate-900 dark:bg-[#102216]">
+    <div className="font-display flex h-screen flex-col overflow-hidden bg-[#f6f8f6] text-slate-900 md:pt-12 dark:bg-[#102216]">
       <main className="relative flex-1 overflow-hidden">
         <RouteMapBackground
           source={source}
