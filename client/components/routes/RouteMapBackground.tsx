@@ -36,6 +36,8 @@ export default function RouteMapBackground({
 }: RouteMapBackgroundProps) {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
+  const mapLoadedRef = useRef(false);
+  const pendingUpdateRef = useRef<(() => void) | null>(null);
   const markersRef = useRef<{
     source: mapboxgl.Marker | null;
     dest: mapboxgl.Marker | null;
@@ -49,18 +51,24 @@ export default function RouteMapBackground({
     const map = new mapboxgl.Map({
       container: mapContainerRef.current,
       style: "mapbox://styles/mapbox/light-v11",
-      center: [0, 0],
-      zoom: 2,
+      center: [78.9, 22.5],
+      zoom: 4,
     });
 
     mapRef.current = map;
 
     map.on("load", () => {
-      // Map loaded
+      mapLoadedRef.current = true;
+      // If routes arrived before map loaded, replay the pending update
+      if (pendingUpdateRef.current) {
+        pendingUpdateRef.current();
+        pendingUpdateRef.current = null;
+      }
     });
 
     return () => {
       map.remove();
+      mapLoadedRef.current = false;
     };
   }, []);
 
@@ -70,22 +78,12 @@ export default function RouteMapBackground({
     if (!map) return;
 
     const updateRoutes = () => {
-      // Clean up stale layers/sources
-      // we check all previously tracked layers or just iterate widely if we didn't track them before (but we added tracking now)
-      // For safety, let's remove any layer starting with route- that is beyond our current count, or just rebuild keys.
-
-      // First, remove layers that are no longer needed or refresh all
-      // The prompt asks to "base the loop on actual routes array length... and remove any stale layers"
-      // Let's assume we maintain route-{i}
-
       // Cleanup layers/sources that exceed current routes length
-      // We can check strictly locally based on index
-      // But simpler: ensure route-i exists for i < length, and remove for i >= length
       let i = 0;
       while (true) {
         const id = `route-${i}`;
         const exists = map.getSource(id);
-        if (!exists && i >= routes.length) break; // No more layers to check
+        if (!exists && i >= routes.length) break;
 
         if (i >= routes.length) {
           // Remove stale
@@ -134,17 +132,10 @@ export default function RouteMapBackground({
         i++;
       }
 
-      // Fit map
+      // Fit map to route bounds
       if (routes.length > 0 && routes[0].geometry.coordinates.length > 0) {
-        const coordinates = routes[0].geometry.coordinates; // Use primary route for bounds
-        // Fix: Use LngLatBounds properly
-        const bounds = new mapboxgl.LngLatBounds(
-          coordinates[0] as [number, number],
-          coordinates[0] as [number, number]
-        );
+        const bounds = new mapboxgl.LngLatBounds();
 
-        // We can traverse all routes to get full bounds if desired,
-        // but using the first route is usually sufficient or we can extend with others.
         routes.forEach((r) => {
           r.geometry.coordinates.forEach((coord) => {
             bounds.extend(coord as [number, number]);
@@ -152,21 +143,22 @@ export default function RouteMapBackground({
         });
 
         map.fitBounds(bounds, {
-          padding: { top: 100, bottom: 100, left: 450, right: 450 },
+          padding: { top: 180, bottom: 260, left: 50, right: 50 },
+          maxZoom: 15,
           duration: 1000,
         });
       }
     };
 
-    if (map.isStyleLoaded()) {
+    if (mapLoadedRef.current) {
       updateRoutes();
     } else {
-      map.once("styledata", updateRoutes);
+      // Map not ready yet — store the update to replay on load
+      pendingUpdateRef.current = updateRoutes;
     }
 
-    // Cleanup listener if effect re-runs (mostly relevant if we had a persistent listener)
     return () => {
-      map.off("styledata", updateRoutes);
+      pendingUpdateRef.current = null;
     };
   }, [routes]);
 

@@ -14,5 +14,6 @@ routes.get("/google/link", googleLink);
 routes.get("/google/callback", googleCallback);
 routes.get("/google/logout", googleLogout);
 routes.get("/user", tokenVerify, getUser);
+routes.get("/health", (_req, res) => res.json({ message: "ok" }));
 
 export default routes;

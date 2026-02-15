@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect, useRef } from "react";
+
 import { AlertTriangle, Ruler, Timer } from "lucide-react";
 
 type TravelMode = "walking" | "driving" | "cycling";
@@ -33,6 +35,14 @@ export default function RouteComparisonPanel({
   selectedRouteIndex,
   onRouteSelect,
 }: RouteComparisonPanelProps) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Reset scroll position when routes load
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollLeft = 0;
+    }
+  }, [routes, isLoading]);
   const formatDuration = (seconds: number): string => {
     const minutes = Math.round(seconds / 60);
     if (minutes < 60) return `${minutes} min`;
@@ -187,7 +197,8 @@ export default function RouteComparisonPanel({
 
           {/* Horizontal scroll container */}
           <div
-            className="flex snap-x gap-3 overflow-x-auto px-4 pb-3"
+            ref={scrollRef}
+            className="flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-3"
             style={{ scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}
           >
             {isLoading ? (
