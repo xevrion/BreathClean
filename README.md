@@ -60,7 +60,7 @@ In modern urban environments, air pollution varies significantly from street to 
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/your-username/BreathClean.git
+   git clone https://github.com/kaihere14/BreathClean.git
    cd BreathClean
    ```
 
