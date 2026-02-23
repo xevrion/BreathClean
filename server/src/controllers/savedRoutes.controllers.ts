@@ -62,7 +62,6 @@ export const saveRoute = async (req: Request, res: Response): Promise<void> => {
       return;
     }
 
-    // 1. Create the Parent Route Document
     const newRoute = await Route.create({
       userId,
       name,
@@ -72,12 +71,9 @@ export const saveRoute = async (req: Request, res: Response): Promise<void> => {
       isFavorite: isFavorite ?? false,
     });
 
-    // 2. Prepare BreakPoints
     let routeBreakpointsData: RouteBreakpoints[] = [];
 
-    // Try to get from Cache first
     if (searchId) {
-      // Validate searchId format to prevent cache-key injection (expecting UUID)
       const uuidRegex =
         /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9-a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -86,66 +82,56 @@ export const saveRoute = async (req: Request, res: Response): Promise<void> => {
           const cached = (await redis.get(`route_search:${searchId}`)) as {
             breakpoints: RouteBreakpoints[];
           } | null;
-          // Upstash Redis usually returns the object directly if stored as JSON
+
           if (cached && cached.breakpoints) {
             routeBreakpointsData = cached.breakpoints;
           }
         } catch {
-          console.warn("[Cache] Redis get failed for validated searchId.");
+          /* redis miss — fall through to recompute */
         }
-      } else {
-        console.warn("[Cache] Ignored invalid searchId format.");
       }
     }
 
-    // Fallback: Re-compute if cache miss or no searchId
-    if (!routeBreakpointsData || routeBreakpointsData.length === 0) {
+    if (routeBreakpointsData.length === 0) {
       try {
-        // Dynamically import to avoid circular dep issues if any,
-        // though static import is fine here too.
         const { computeBreakpoints } =
           await import("../utils/compute/breakPoint.compute.js");
         routeBreakpointsData = computeBreakpoints(routes) as RouteBreakpoints[];
       } catch (e) {
         console.error("Failed to re-compute breakpoints during save:", e);
-        // If this fails, we save the route without breakpoints rather than crashing
       }
     }
 
-    // 3. Save BreakPoint Documents
-    if (routeBreakpointsData && routeBreakpointsData.length > 0) {
+    if (routeBreakpointsData.length > 0) {
       const breakPointDocs: BreakpointDoc[] = [];
 
-      // Iterate through each route option (0, 1, 2)
-      routeBreakpointsData.forEach(
-        (rb: RouteBreakpoints, routeIndex: number) => {
-          // Iterate through points in this route (point_1, point_2...)
-          Object.keys(rb).forEach((key) => {
-            if (key.startsWith("point_")) {
-              const parts = key.split("_");
-              if (parts.length < 2) return;
-              const idxStr = parts[1];
-              if (!idxStr) return;
-              const pointIndex = parseInt(idxStr, 10) - 1; // 1-based to 0-based
-              if (Number.isNaN(pointIndex)) return;
+      routeBreakpointsData.forEach((rb, routeIndex) => {
+        Object.keys(rb).forEach((key) => {
+          if (!key.startsWith("point_")) return;
 
-              const coord = rb[key]; // { lat, lon }
+          const parts = key.split("_");
+          if (parts.length < 2) return;
 
-              if (coord) {
-                breakPointDocs.push({
-                  routeId: newRoute._id,
-                  routeOptionIndex: routeIndex,
-                  pointIndex: pointIndex,
-                  location: {
-                    type: "Point",
-                    coordinates: [coord.lon, coord.lat], // GeoJSON: [lon, lat]
-                  },
-                });
-              }
-            }
-          });
-        }
-      );
+          const idxStr = parts[1];
+          if (!idxStr) return;
+
+          const pointIndex = parseInt(idxStr, 10) - 1;
+          if (Number.isNaN(pointIndex)) return;
+
+          const coord = rb[key];
+          if (coord) {
+            breakPointDocs.push({
+              routeId: newRoute._id,
+              routeOptionIndex: routeIndex,
+              pointIndex,
+              location: {
+                type: "Point",
+                coordinates: [coord.lon, coord.lat],
+              },
+            });
+          }
+        });
+      });
 
       if (breakPointDocs.length > 0) {
         await BreakPoint.insertMany(breakPointDocs);
@@ -178,7 +164,6 @@ export const deleteRoute = async (
       return;
     }
 
-    // Cascade-delete associated breakpoints
     await BreakPoint.deleteMany({ routeId: route._id });
 
     res.status(200).json({ success: true, message: "Route deleted" });

@@ -1,0 +1,2 @@
+# Use the custom 'theirs' merge driver for all files to prefer incoming changes.
+* merge=theirs

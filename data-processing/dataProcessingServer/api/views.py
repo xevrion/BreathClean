@@ -71,6 +71,7 @@ def compute_scores(request):
 
         routes = body.get("routes", [])
         use_pathway = body.get("usePathway", False)
+        
 
         # Validation
         if not isinstance(routes, list):
@@ -174,6 +175,7 @@ def compute_single_score(request):
 
         # Import here to avoid circular imports
         from .pathway.transformers import compute_route_score
+        
 
         result = compute_route_score(body)
 

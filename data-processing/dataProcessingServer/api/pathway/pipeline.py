@@ -29,6 +29,15 @@ try:
 except (ImportError, AttributeError):
     pass
 
+# Pathway is Linux-only. Even if the package is importable on Windows
+# (e.g. accidental/bundled install), avoid using it because it can
+# hang or fail at runtime on Windows environments. Force disabled on
+# Windows to ensure the Django server remains responsive.
+import sys
+if sys.platform.startswith("win") and PATHWAY_AVAILABLE:
+    PATHWAY_AVAILABLE = False
+    pw = None
+
 from .transformers import compute_route_score, compute_batch_scores
 
 

@@ -35,7 +35,6 @@ app.get("/", (_req, res) => {
   res.json({ message: "Server is running" });
 });
 
-// Manual trigger for batch scoring (admin only)
 app.post("/api/v1/scheduler/run", tokenVerify, async (_req, res) => {
   try {
     await runManualBatchScoring();
@@ -48,7 +47,6 @@ app.post("/api/v1/scheduler/run", tokenVerify, async (_req, res) => {
   }
 });
 
-// Health check for Pathway server (admin only)
 app.get("/api/v1/scheduler/pathway-health", tokenVerify, async (_req, res) => {
   const pathwayUrl = process.env.PATHWAY_URL || "http://localhost:8001";
   const isHealthy = await checkPathwayHealth(pathwayUrl);
@@ -62,10 +60,8 @@ connectDB()
     app.listen(PORT, () => {
       console.log(`Server running on port ${PORT}`);
 
-      // Start the periodic batch scoring scheduler
       initScheduler();
 
-      // Also fire once immediately on startup (no wait for first cron tick)
       runManualBatchScoring().catch((err) =>
         console.error("[Scheduler] Startup run failed:", err)
       );

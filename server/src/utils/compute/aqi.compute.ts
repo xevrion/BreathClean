@@ -1,15 +1,10 @@
 import type { Coordinate, RoutePoints } from "./weather.compute.js";
 
-//
-// Type definitions for AQI data
-
-// AQI data structure based on AQICN API response
 export interface AQIData {
-  aqi: number; // Air Quality Index value
-  dominentpol?: string | undefined; // Dominant pollutant (pm25, pm10, o3, etc.)
+  aqi: number;
+  dominentpol?: string | undefined;
   iaqi?:
     | {
-        // Individual Air Quality Index for each pollutant
         pm25?: { v: number };
         pm10?: { v: number };
         o3?: { v: number };
@@ -20,8 +15,8 @@ export interface AQIData {
     | undefined;
   time?:
     | {
-        s: string; // ISO timestamp
-        tz: string; // Timezone
+        s: string;
+        tz: string;
       }
     | undefined;
 }
@@ -70,11 +65,7 @@ export interface RouteAQIResult {
 const AQI_TIMEOUT_MS = 5000;
 const AQI_MAX_RETRIES = 2;
 
-/**
- * Fetches AQI data for a single coordinate point using AQICN API.
- * Retries up to AQI_MAX_RETRIES times on network failures.
- * Returns AQI data or null if all attempts fail.
- */
+// Fetches AQI data for a coordinate point using AQICN API with retries
 async function fetchAQIForPoint(
   lat: number,
   lon: number
@@ -143,12 +134,7 @@ async function fetchAQIForPoint(
   return null;
 }
 
-/**
- * Computes AQI data for multiple routes with multiple points
- *
- * @param routes - Array of route objects, each containing point_1, point_2, point_3, etc.
- * @returns Array of AQI results for each route
- */
+// Computes AQI data for multiple routes
 export async function computeAQI(
   routes: RoutePoints[]
 ): Promise<RouteAQIResult[]> {
@@ -161,14 +147,12 @@ export async function computeAQI(
       throw new Error("AQI_API_KEY not configured");
     }
 
-    // Task definition for batching
     interface PointTask {
       routeIndex: number;
       pointKey: string;
       point: Coordinate;
     }
 
-    // Step 1: Collect ALL points that need AQI data from ALL routes
     const allPointTasks: PointTask[] = [];
     routes.forEach((route, routeIndex) => {
       for (let i = 1; i <= 7; i++) {
@@ -180,8 +164,7 @@ export async function computeAQI(
       }
     });
 
-    // Step 2: Execute fetches in batches (Concurrency Limiter)
-    // No more than N requests in parallel to avoid quota/resource issues
+    // 2. Fetch data in parallel batches (Concurrency Limiter)
     const pointResultsMap = new Map<number, PointAQIResult[]>();
     const CONCURRENCY_LIMIT = 5;
 
@@ -219,7 +202,7 @@ export async function computeAQI(
       });
     }
 
-    // Step 3: Format the results back to the expected RouteAQIResult[] structure
+    // 3. Format results into RouteAQIResult structure
     const results: RouteAQIResult[] = routes.map((_, routeIndex) => {
       const pointResults = pointResultsMap.get(routeIndex) || [];
       return {

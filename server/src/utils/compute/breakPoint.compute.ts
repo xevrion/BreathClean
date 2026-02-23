@@ -1,4 +1,3 @@
-// Type definitions
 interface Coordinate {
   lat: number;
   lon: number;
@@ -6,11 +5,11 @@ interface Coordinate {
 
 interface RouteGeometry {
   type: string;
-  coordinates: [number, number][]; // [lon, lat] format from GeoJSON
+  coordinates: [number, number][];
 }
 
 interface RouteInput {
-  distance: number; // in kilometers
+  distance: number;
   duration: number;
   routeGeometry: RouteGeometry;
 }
@@ -25,27 +24,18 @@ interface RouteBreakpoints {
   point_7?: Coordinate;
 }
 
-/**
- * Calculate the number of breakpoints based on route distance
- * - Under 100 km: 3 points
- * - 100-500 km: 3-4 points
- * - Above 500 km: 3-4 points (reduced to prevent API timeouts)
- */
+// Calculates points needed based on distance to balance detail and speed
 function calculateBreakpointCount(distance: number): number {
   if (distance < 100) {
     return 3;
   } else if (distance >= 100 && distance <= 500) {
-    // Scale between 3-4 based on distance
     return distance < 300 ? 3 : 4;
   } else {
-    // For very long routes, use 3-4 points to prevent timeouts
     return distance < 750 ? 3 : 4;
   }
 }
 
-/**
- * Check if two coordinates are the same (within a small tolerance)
- */
+// Checks if coordinates are within 0.0001 degrees (tolerance)
 function areCoordinatesEqual(
   coord1: Coordinate,
   coord2: Coordinate,
@@ -57,9 +47,7 @@ function areCoordinatesEqual(
   );
 }
 
-/**
- * Extract evenly spaced breakpoints from a route's coordinates
- */
+// Extracts evenly spaced, unique breakpoints from route geometry
 function extractBreakpoints(
   coordinates: [number, number][],
   count: number,
@@ -68,24 +56,19 @@ function extractBreakpoints(
 ): Coordinate[] {
   const totalCoords = coordinates.length;
   if (totalCoords < 2) {
-    return []; // Should be caught by computeBreakpoints validation
+    return [];
   }
   const breakpoints: Coordinate[] = [];
 
-  // Calculate evenly spaced indices, avoiding start (0) and end (totalCoords-1)
-  // We'll distribute points evenly across the route
   for (let i = 0; i < count; i++) {
-    // Calculate position as a fraction of the route (avoiding 0 and 1)
     const fraction = (i + 1) / (count + 1);
     const index = Math.floor(fraction * totalCoords);
 
-    // Ensure index is within bounds and not at the very start or end
     const safeIndex = Math.max(1, Math.min(index, totalCoords - 2));
 
-    // Convert from GeoJSON [lon, lat] to our Coordinate {lat, lon}
     const coordAtIndex = coordinates[safeIndex];
     if (!coordAtIndex) {
-      continue; // Skip if coordinate is undefined
+      continue;
     }
     const coordinate: Coordinate = {
       lat: coordAtIndex[1],
@@ -101,7 +84,6 @@ function extractBreakpoints(
       breakpoints.push(coordinate);
       usedCoordinates.push(coordinate);
     } else {
-      // If duplicate, try nearby indices
       let offset = 1;
       let found = false;
       while (!found && offset < 10) {
@@ -110,7 +92,7 @@ function extractBreakpoints(
           if (altIndex > 0 && altIndex < totalCoords - 1) {
             const altCoordAtIndex = coordinates[altIndex];
             if (!altCoordAtIndex) {
-              continue; // Skip if coordinate is undefined
+              continue;
             }
             const altCoordinate: Coordinate = {
               lat: altCoordAtIndex[1],
@@ -132,10 +114,9 @@ function extractBreakpoints(
         offset++;
       }
 
-      // If still not found after trying nearby indices, skip this point to guarantee uniqueness
       if (!found) {
         console.warn(
-          `[Route ${routeLabel}] Skipping duplicate breakpoint at index ${safeIndex} (${coordinate.lat}, ${coordinate.lon}) because no unique alternative was found nearby.`
+          `[Route ${routeLabel}] Skipping duplicate breakpoint at index ${safeIndex} (${coordinate.lat}, ${coordinate.lon})`
         );
       }
     }
@@ -144,24 +125,7 @@ function extractBreakpoints(
   return breakpoints;
 }
 
-/**
- * Compute breakpoints for multiple routes
- *
- * @param routes - Array of route objects (max 3 routes)
- * @returns Array of route breakpoints with unique coordinates
- *
- * @example
- * const routes = [
- *   { distance: 218.4, duration: 337.2, routeGeometry: {...} },
- *   { distance: 268.5, duration: 415.2, routeGeometry: {...} }
- * ];
- * const breakpoints = computeBreakpoints(routes);
- * // Returns:
- * // [
- * //   { point_1: {lat, lon}, point_2: {lat, lon}, point_3: {lat, lon} },
- * //   { point_1: {lat, lon}, point_2: {lat, lon}, point_3: {lat, lon} }
- * // ]
- */
+// Main entry point for computing unique breakpoints for multiple routes
 export function computeBreakpoints(routes: RouteInput[]): RouteBreakpoints[] {
   if (!routes || routes.length === 0) {
     throw new Error("No routes provided");

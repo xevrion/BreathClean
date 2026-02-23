@@ -1,5 +1,3 @@
-//
-// Type definitions for better type safety
 export interface Coordinate {
   lat: number;
   lon: number;
@@ -15,7 +13,6 @@ export interface RoutePoints {
   point_7?: Coordinate;
 }
 
-// Main weather data that we care about
 export interface WeatherMain {
   temp: number;
   feels_like: number;
@@ -25,7 +22,6 @@ export interface WeatherMain {
   humidity: number;
 }
 
-// Full weather API response (for internal use)
 interface WeatherAPIResponse {
   main?: WeatherMain;
   coord?: { lon: number; lat: number };
@@ -55,16 +51,13 @@ export interface RouteWeatherResult {
   successfulFetches: number;
 }
 
-/**
- * Fetches weather data for a single coordinate point
- * Returns only the main weather object
- */
+// Fetches current weather for a single coordinate point
 async function fetchWeatherForPoint(
   lat: number,
   lon: number
 ): Promise<WeatherMain | null> {
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 8000); // 8 second timeout
+  const timeoutId = setTimeout(() => controller.abort(), 8000);
 
   try {
     const response = await fetch(
@@ -81,7 +74,6 @@ async function fetchWeatherForPoint(
 
     const data = (await response.json()) as WeatherAPIResponse;
 
-    // Return only the main object
     if (data.main) {
       return data.main;
     }
@@ -100,12 +92,7 @@ async function fetchWeatherForPoint(
   }
 }
 
-/**
- * Computes weather data for multiple routes with multiple points
- *
- * @param routes - Array of route objects, each containing point_1, point_2, point_3, etc.
- * @returns Array of weather results for each route, with only main weather data
- */
+// Computes weather data for all points across multiple routes
 export async function computeWeather(
   routes: RoutePoints[]
 ): Promise<RouteWeatherResult[]> {
@@ -118,14 +105,12 @@ export async function computeWeather(
       throw new Error("WEATHER_API_KEY not configured");
     }
 
-    // Task definition for batching
     interface PointTask {
       routeIndex: number;
       pointKey: string;
       point: Coordinate;
     }
 
-    // Step 1: Collect ALL points that need weather data from ALL routes
     const allPointTasks: PointTask[] = [];
     routes.forEach((route, routeIndex) => {
       for (let i = 1; i <= 7; i++) {
@@ -137,8 +122,7 @@ export async function computeWeather(
       }
     });
 
-    // Step 2: Execute fetches in batches (Concurrency Limiter)
-    // No more than N requests in parallel to avoid quota/resource issues
+    // Concurrency-limited batch processing
     const pointResultsMap = new Map<number, PointWeatherResult[]>();
     const CONCURRENCY_LIMIT = 5;
 
@@ -176,7 +160,7 @@ export async function computeWeather(
       });
     }
 
-    // Step 3: Format the results back to the expected RouteWeatherResult[] structure
+    // Map results back to structured RouteWeatherResult array
     const results: RouteWeatherResult[] = routes.map((_, routeIndex) => {
       const pointResults = pointResultsMap.get(routeIndex) || [];
       return {

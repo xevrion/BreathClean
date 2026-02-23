@@ -68,12 +68,21 @@ _render_host_candidates = [
     os.getenv('RENDER_EXTERNAL_HOSTNAME', ''),
     os.getenv('RENDER_EXTERNAL_URL', ''),
     os.getenv('RENDER_SERVICE_NAME', ''),
+    os.getenv('RAILWAY_PUBLIC_DOMAIN', ''),
+    os.getenv('BACKEND_URL', ''),
+    os.getenv('API_URL', ''),
+    os.getenv('PUBLIC_URL', ''),
+    os.getenv('APP_URL', ''),
 ]
 _render_hosts = [
     h for h in (_normalize_host(c) for c in _render_host_candidates) if h
 ]
 
-if _allowed_hosts_from_env:
+_allow_all_hosts = os.getenv('DJANGO_ALLOW_ALL_HOSTS', '').lower() in ('true', '1', 'yes')
+
+if _allow_all_hosts:
+    ALLOWED_HOSTS = ['*']
+elif _allowed_hosts_from_env:
     ALLOWED_HOSTS = _allowed_hosts_from_env
 else:
     # Local dev: allow all localhost variants + Render hosts for production
@@ -103,6 +112,8 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    # Custom API exception middleware — placed early so API errors return JSON
+    'api.middleware.ApiExceptionMiddleware',
     # CorsMiddleware MUST come before CommonMiddleware to handle preflight OPTIONS requests
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
@@ -144,8 +155,17 @@ WSGI_APPLICATION = 'dataProcessingServer.wsgi.application'
 _cors_env = os.getenv('CORS_ALLOWED_ORIGINS', '')
 _cors_from_env = [o.strip() for o in _cors_env.split(',') if o.strip()]
 
+_cors_url_candidates = [
+    os.getenv('FRONTEND_URL', ''),
+    os.getenv('CLIENT_URL', ''),
+    os.getenv('WEB_URL', ''),
+]
+_cors_from_candidates = [u.strip() for u in _cors_url_candidates if u and u.strip()]
+
 if _cors_from_env:
     CORS_ALLOWED_ORIGINS = _cors_from_env
+elif _cors_from_candidates:
+    CORS_ALLOWED_ORIGINS = _cors_from_candidates
 else:
     # Local dev fallback — never reaches production if env var is set
     CORS_ALLOWED_ORIGINS = [

@@ -1,13 +1,3 @@
-/**
- * Periodic Route Score Computation Scheduler
- *
- * Runs on a cron schedule and:
- * 1. Fetches all saved routes from MongoDB
- * 2. For each route, retrieves stored breakpoints
- * 3. Fetches fresh AQI/weather data for those breakpoints
- * 4. Sends data to Pathway for score computation
- * 5. Updates route documents with new scores
- */
 import BreakPoint from "../../Schema/breakPoints.js";
 import Route from "../../Schema/route.schema.js";
 import { computeAQI } from "../compute/aqi.compute.js";
@@ -17,23 +7,12 @@ import {
 } from "../compute/weather.compute.js";
 import { type PathwayRouteInput, sendToPathway } from "./pathwayClient.js";
 
-// ─── Configuration ────────────────────────────────────────────────────────────
 const PATHWAY_URL = process.env.PATHWAY_URL || "http://localhost:8001";
 const BATCH_SIZE = 5;
-// Interval in milliseconds (default: 30 minutes)
 const SCHEDULE_INTERVAL_MS = process.env.SCHEDULE_INTERVAL_MS
   ? parseInt(process.env.SCHEDULE_INTERVAL_MS, 10)
   : 30 * 60 * 1000;
 
-// ─── Schema note ──────────────────────────────────────────────────────────────
-// routeOptionSchema stores travelMode as a plain String in MongoDB.
-// When using .lean(), the value is a raw string — not an ITravelMode object.
-// We cast through unknown to read it correctly.
-// ─────────────────────────────────────────────────────────────────────────────
-
-/**
- * Convert stored breakpoints to RoutePoints format expected by compute utilities
- */
 function breakpointsToRoutePoints(
   breakpoints: Array<{
     pointIndex: number;
@@ -45,7 +24,6 @@ function breakpointsToRoutePoints(
 
   sorted.forEach((bp, index) => {
     const key = `point_${index + 1}` as keyof RoutePoints;
-    // MongoDB stores [lon, lat] — convert to { lat, lon }
     routePoints[key] = {
       lat: bp.location.coordinates[1],
       lon: bp.location.coordinates[0],
@@ -55,9 +33,6 @@ function breakpointsToRoutePoints(
   return routePoints;
 }
 
-/**
- * Process a single route option: fetch environmental data, compute score, persist to DB
- */
 async function processRoute(
   routeId: string,
   routeOptionIndex: number,
@@ -75,7 +50,6 @@ async function processRoute(
   error?: string;
 }> {
   try {
-    // Step 1: Fetch breakpoints for this route option
     const breakpoints = await BreakPoint.find({
       routeId,
       routeOptionIndex,
@@ -90,10 +64,8 @@ async function processRoute(
       };
     }
 
-    // Step 2: Convert breakpoints → RoutePoints
     const routePoints = breakpointsToRoutePoints(breakpoints);
 
-    // Step 3: Fetch Weather & AQI in parallel
     const [weatherResults, aqiResults] = await Promise.all([
       computeWeather([routePoints]),
       computeAQI([routePoints]),
@@ -111,8 +83,6 @@ async function processRoute(
       };
     }
 
-    // Step 4: Build Pathway payload
-    // travelMode is a plain String from MongoDB lean() — pass directly
     const pathwayInput: PathwayRouteInput = {
       routeId,
       routeIndex: routeOptionIndex,
@@ -129,7 +99,6 @@ async function processRoute(
         : {}),
     };
 
-    // Step 5: Send to Pathway
     const pathwayResult = await sendToPathway(PATHWAY_URL, [pathwayInput]);
 
     if (!pathwayResult.success || !pathwayResult.routes?.[0]) {
@@ -143,7 +112,6 @@ async function processRoute(
 
     const computedScore = pathwayResult.routes[0];
 
-    // Step 6: Persist score to MongoDB
     await Route.updateOne(
       { _id: routeId },
       {
@@ -171,9 +139,6 @@ async function processRoute(
   }
 }
 
-/**
- * Main batch scoring job — fetches all routes and recomputes scores
- */
 export async function runBatchScoring(): Promise<void> {
   try {
     const routes = await Route.find({}).lean();
@@ -182,7 +147,6 @@ export async function runBatchScoring(): Promise<void> {
       return;
     }
 
-    // Build flat list of all route-options to process
     const tasks: Array<{
       routeId: string;
       routeOptionIndex: number;
@@ -196,7 +160,6 @@ export async function runBatchScoring(): Promise<void> {
 
     for (const route of routes) {
       route.routes.forEach((option, index) => {
-        // travelMode is stored as a plain String in MongoDB (routeOptionSchema: type: String)
         const rawTravelMode = (option as unknown as { travelMode: string })
           .travelMode;
 
@@ -216,7 +179,6 @@ export async function runBatchScoring(): Promise<void> {
       });
     }
 
-    // Process in controlled batches
     const results: Array<{
       success: boolean;
       routeId: string;
@@ -236,40 +198,33 @@ export async function runBatchScoring(): Promise<void> {
 
       results.push(...batchResults);
 
-      // Rate-limit friendly delay between batches
       if (i + BATCH_SIZE < tasks.length) {
         await new Promise((resolve) => setTimeout(resolve, 500));
       }
     }
   } catch {
-    // silent — errors are captured per-route
+    /* batch scoring failed silently — individual route errors are captured per-task */
   }
 }
 
-/**
- * Initialize the scheduler using setInterval
- */
 let _isRunning = false;
 
 export function initScheduler(): void {
   setInterval(async () => {
     if (_isRunning) {
-      return; // skip — previous batch still in progress
+      return;
     }
     _isRunning = true;
     try {
       await runBatchScoring();
     } catch {
-      // silent
+      /* scheduler tick failed — _isRunning reset in finally */
     } finally {
       _isRunning = false;
     }
   }, SCHEDULE_INTERVAL_MS);
 }
 
-/**
- * Run batch scoring manually (admin endpoint / startup trigger)
- */
 export async function runManualBatchScoring(): Promise<void> {
   await runBatchScoring();
 }

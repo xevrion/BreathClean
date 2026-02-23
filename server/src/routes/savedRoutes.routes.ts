@@ -10,7 +10,6 @@ import { tokenVerify } from "../middleware/tokenVerify.js";
 
 const router = Router();
 
-// All routes require authentication
 router.use(tokenVerify);
 
 router.get("/", fetchSavedRoutes);

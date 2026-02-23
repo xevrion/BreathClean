@@ -1,19 +1,15 @@
 import mongoose, { Document, Schema } from "mongoose";
 
-// --- Main BreakPoint Interface ---
-
 export interface IBreakPoint extends Document {
-  routeId: mongoose.Types.ObjectId; // Reference to the parent Route document
-  routeOptionIndex: number; // Index of the specific route option (0, 1, 2...)
-  pointIndex: number; // Index of this point in the sequence (0, 1, 2...)
+  routeId: mongoose.Types.ObjectId;
+  routeOptionIndex: number;
+  pointIndex: number;
 
   location: {
     type: "Point";
-    coordinates: [number, number]; // [longitude, latitude]
+    coordinates: [number, number];
   };
 }
-
-// --- Schema ---
 
 const pointSchema = new Schema(
   {
@@ -53,10 +49,8 @@ const breakPointSchema = new Schema<IBreakPoint>(
   { timestamps: true }
 );
 
-// Index for geospatial queries (finding points near a location)
 breakPointSchema.index({ location: "2dsphere" });
 
-// Index for retrieving all points for a specific route option
 breakPointSchema.index({ routeId: 1, routeOptionIndex: 1 });
 
 const BreakPoint = mongoose.model<IBreakPoint>("BreakPoint", breakPointSchema);

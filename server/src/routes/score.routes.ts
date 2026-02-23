@@ -6,7 +6,6 @@ import { tokenVerify } from "../middleware/tokenVerify.js";
 
 const router = Router();
 
-// Rate limiter: 10 requests per minute per IP
 const scoreLimiter = rateLimit({
   windowMs: 1 * 60 * 1000, // 1 minute
   max: 10, // Limit each IP to 10 requests per windowMs
