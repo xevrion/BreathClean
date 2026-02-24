@@ -11,7 +11,7 @@ export default function ProfileCard({ user }: { user: UserData }) {
   });
 
   return (
-    <div className="overflow-hidden rounded-2xl bg-white shadow-sm">
+    <div className="mt-10 overflow-hidden rounded-2xl bg-white shadow-sm">
       {/* Banner */}
       <div className="from-bc-primary relative h-32 bg-gradient-to-r to-emerald-400">
         <div className="absolute inset-0 opacity-20">
