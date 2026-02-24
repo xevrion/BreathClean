@@ -528,7 +528,7 @@ export default function HomeMap({ className }: HomeMapProps) {
           <button
             onClick={() => handleNavigationClick("source")}
             disabled={isGettingCurrentLocation === "source"}
-            className="absolute top-1/2 right-2 -translate-y-1/2 rounded-full p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-[#2bee6c] dark:hover:bg-slate-700"
+            className={`absolute top-1/2 right-2 -translate-y-1/2 rounded-full p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-[#2bee6c] dark:hover:bg-slate-700 ${sourceQuery ? "hidden" : ""}`}
             title="Use Current Location"
           >
             <LocateFixed
@@ -595,7 +595,7 @@ export default function HomeMap({ className }: HomeMapProps) {
           <button
             onClick={() => handleNavigationClick("dest")}
             disabled={isGettingCurrentLocation === "dest"}
-            className="absolute top-1/2 right-2 -translate-y-1/2 rounded-full p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-[#2bee6c] dark:hover:bg-slate-700"
+            className={`absolute top-1/2 right-2 -translate-y-1/2 rounded-full p-1.5 text-slate-400 transition-colors hover:bg-slate-100 hover:text-[#2bee6c] dark:hover:bg-slate-700 ${destQuery ? "hidden" : ""}`}
             title="Use Current Location"
           >
             <LocateFixed
