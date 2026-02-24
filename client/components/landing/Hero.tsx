@@ -1,17 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import {
-  ExternalLink,
-  Lock,
-  MapPin,
-  Navigation,
-  PlayCircle,
-} from "lucide-react";
+import { ExternalLink, Lock, MapPin, PlayCircle } from "lucide-react";
 
 export default function Hero() {
   return (
-    <header className="bg-bc-bg-light dark:bg-bc-bg-dark relative overflow-hidden pt-32 pb-20 md:pt-48 md:pb-32">
+    <header className="bg-bc-bg-light dark:bg-bc-bg-dark relative overflow-hidden pt-32 pb-20 md:pt-38 md:pb-32">
       <div className="map-texture pointer-events-none absolute inset-0" />
       <div className="hero-gradient pointer-events-none absolute inset-0" />
 
@@ -81,69 +75,112 @@ export default function Hero() {
 
         {/* Right - Map preview */}
         <div className="relative">
-          <div className="bg-bc-primary/20 absolute -inset-4 rounded-[40px] opacity-30 blur-3xl" />
-          <div className="relative overflow-hidden rounded-[32px] border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-slate-900">
+          <div className="absolute -inset-6 rounded-[44px] bg-[#2bee6c]/15 blur-3xl" />
+          <div className="relative overflow-hidden rounded-[28px] border border-slate-200/60 bg-white shadow-[0_32px_64px_rgba(0,0,0,0.1)] dark:border-slate-700/50 dark:bg-slate-900">
             {/* Browser chrome */}
-            <div className="flex h-14 items-center justify-between border-b border-slate-100 bg-slate-50 px-6 dark:border-slate-800 dark:bg-slate-800/50">
-              <div className="flex gap-1.5">
-                <div className="h-3 w-3 rounded-full bg-slate-300 dark:bg-slate-700" />
-                <div className="h-3 w-3 rounded-full bg-slate-300 dark:bg-slate-700" />
-                <div className="h-3 w-3 rounded-full bg-slate-300 dark:bg-slate-700" />
+            <div className="flex h-11 items-center justify-between border-b border-slate-100 bg-slate-50 px-5 dark:border-slate-800 dark:bg-slate-800/60">
+              <div className="flex gap-2">
+                <div className="h-3 w-3 rounded-full bg-red-400" />
+                <div className="h-3 w-3 rounded-full bg-yellow-400" />
+                <div className="h-3 w-3 rounded-full bg-green-400" />
               </div>
-              <div className="flex items-center gap-2 rounded-md border border-slate-200 bg-white px-4 py-1 text-[10px] font-medium text-slate-400 dark:border-slate-700 dark:bg-slate-900">
-                <Lock className="h-3 w-3" />
-                breathclean.dev
+              <div className="flex items-center gap-1.5 rounded-full border border-slate-200/80 bg-white px-3 py-1 text-[11px] font-medium text-slate-400 dark:border-slate-700 dark:bg-slate-900">
+                <Lock className="h-2.5 w-2.5" />
+                breathclean.dev/home
               </div>
-              <div className="w-10" />
+              <div className="w-14" />
             </div>
 
-            {/* Map content */}
-            <div className="p-4">
-              <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-slate-50 dark:bg-slate-800">
+            {/* Map area */}
+            <div className="p-3">
+              <div className="relative aspect-[4/3] overflow-hidden rounded-xl">
                 <Image
-                  alt="Map interface background"
-                  className="h-full w-full object-cover opacity-50"
+                  alt="Map interface"
+                  className="h-full w-full object-cover opacity-55"
                   src="https://lh3.googleusercontent.com/aida-public/AB6AXuBjzTyQx-fPBBSOFMOiXqJbGHwy8VoJK-VumptPqFOn86n8xVqQdp_u6ZIkUcZEwRUf1Vb0mMO-sCfJjPRX5Pu25XfPbuo0aXBlaFJ71ChJp7wznVWUWZFX3Lwn7W9M25cnUIsAkdcFIa1ROkSB-gnGyyGX45Kg9gF3RK9-6uTrdhqHJEtoo3NB8gjP2E95ui0IaMC7X3DPhWlhfGrWdMt5C0j-9-uBTtiK_Tzu2ZKWBoVA9SExwuhgZVRjUWSEPKS1uRdGqEvI9BuY"
                   fill
                   sizes="(max-width: 768px) 100vw, 50vw"
                 />
+                <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-transparent to-emerald-900/10" />
 
-                <div className="absolute inset-0 flex flex-col space-y-4 p-6">
-                  {/* Route discovery card */}
-                  <div className="w-64 rounded-xl border border-slate-100 bg-white p-4 shadow-lg dark:border-slate-800 dark:bg-slate-900">
-                    <div className="mb-2 text-xs font-bold text-slate-400 uppercase">
-                      Route Discovery
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-3 rounded-lg border border-slate-100 bg-slate-50 p-2 dark:border-slate-700 dark:bg-slate-800">
-                        <MapPin className="h-4 w-4 text-blue-500" />
-                        <div className="text-[10px] font-bold">
+                {/* Route input card */}
+                <div className="absolute top-4 left-4 w-[210px] rounded-2xl bg-white/95 p-4 shadow-2xl backdrop-blur-md dark:bg-slate-900/95">
+                  <div className="relative space-y-3">
+                    <div className="absolute top-[18px] left-[4px] h-[26px] w-px border-l-2 border-dashed border-slate-300 dark:border-slate-600" />
+
+                    <div className="flex items-center gap-3">
+                      <div className="h-2.5 w-2.5 flex-shrink-0 rounded-full border-2 border-[#2bee6c] bg-white" />
+                      <div className="min-w-0">
+                        <p className="text-[9px] font-semibold tracking-wide text-slate-400 uppercase">
+                          From
+                        </p>
+                        <p className="truncate text-[11px] font-bold text-slate-800 dark:text-white">
                           Sunset Blvd, 1202
-                        </div>
+                        </p>
                       </div>
-                      <div className="flex items-center gap-3 rounded-lg border border-slate-100 bg-slate-50 p-2 dark:border-slate-700 dark:bg-slate-800">
-                        <Navigation className="text-bc-primary h-4 w-4" />
-                        <div className="text-[10px] font-bold">
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <MapPin className="h-3 w-3 flex-shrink-0 text-rose-500" />
+                      <div className="min-w-0">
+                        <p className="text-[9px] font-semibold tracking-wide text-slate-400 uppercase">
+                          To
+                        </p>
+                        <p className="truncate text-[11px] font-bold text-slate-800 dark:text-white">
                           Grand Park Central
-                        </div>
+                        </p>
                       </div>
                     </div>
                   </div>
 
-                  {/* Cleanest path card */}
-                  <div className="w-48 self-end rounded-xl border border-slate-100 bg-white p-4 shadow-lg dark:border-slate-800 dark:bg-slate-900">
-                    <div className="mb-2 flex items-center justify-between">
-                      <span className="text-xs font-bold">Cleanest Path</span>
-                      <span className="text-bc-primary text-xs font-bold">
-                        92/100
+                  <div className="mt-3 flex items-center gap-1.5 rounded-lg bg-emerald-50 px-2.5 py-1.5 dark:bg-emerald-900/20">
+                    <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#2bee6c]" />
+                    <span className="text-[9px] font-bold text-emerald-700 dark:text-emerald-400">
+                      Live AQI · Good along route
+                    </span>
+                  </div>
+                </div>
+
+                {/* Score card */}
+                <div className="absolute right-4 bottom-4 w-[175px] rounded-2xl bg-white/95 p-4 shadow-2xl backdrop-blur-md dark:bg-slate-900/95">
+                  <div className="mb-3 flex items-start justify-between">
+                    <div>
+                      <p className="text-[9px] font-semibold tracking-wide text-slate-400 uppercase">
+                        Cleanest Route
+                      </p>
+                      <p className="text-[12px] font-extrabold text-slate-800 dark:text-white">
+                        Via Main St
+                      </p>
+                    </div>
+                    <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-emerald-50 dark:bg-emerald-900/30">
+                      <span className="text-sm leading-none font-black text-[#2bee6c]">
+                        92
                       </span>
                     </div>
-                    <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
-                      <div className="bg-bc-primary h-full w-[92%] rounded-full" />
+                  </div>
+
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+                    <div className="h-full w-[92%] rounded-full bg-gradient-to-r from-[#2bee6c] to-emerald-400" />
+                  </div>
+
+                  <div className="mt-3 grid grid-cols-3 divide-x divide-slate-100 text-center dark:divide-slate-800">
+                    <div className="pr-1">
+                      <p className="text-[11px] font-bold text-slate-700 dark:text-slate-200">
+                        18m
+                      </p>
+                      <p className="text-[8px] text-slate-400">time</p>
                     </div>
-                    <div className="mt-3 flex justify-between text-[10px] text-slate-400">
-                      <span>18 min</span>
-                      <span>2.4 km</span>
+                    <div className="px-1">
+                      <p className="text-[11px] font-bold text-slate-700 dark:text-slate-200">
+                        2.4km
+                      </p>
+                      <p className="text-[8px] text-slate-400">dist</p>
+                    </div>
+                    <div className="pl-1">
+                      <p className="text-[11px] font-bold text-[#2bee6c]">
+                        Good
+                      </p>
+                      <p className="text-[8px] text-slate-400">AQI</p>
                     </div>
                   </div>
                 </div>
