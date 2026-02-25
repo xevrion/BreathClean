@@ -1,3 +1,4 @@
+
 # BreathClean
 
 **Breathe Easier on Every Journey.**
@@ -19,7 +20,6 @@ BreathClean is a health-first route planning application for urban commuters. It
 ![License](https://img.shields.io/badge/License-ISC-lightgrey)
 
 ---
-
 ## Table of Contents
 
 - [The Problem](#the-problem)
