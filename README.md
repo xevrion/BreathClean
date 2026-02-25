@@ -2,6 +2,13 @@
 
 **Breathe Easier on Every Journey.**
 
+
+<div align="center">
+  
+![Nova Drive Logo](https://breathe.daemondoc.online/_next/image?url=%2Flogo.png&w=256&q=75) 
+
+</div>
+
 BreathClean is a health-first route planning application for urban commuters. It integrates real-time Air Quality Index (AQI) and weather data into navigation to recommend routes that minimize pollution exposure — because the fastest route isn't always the healthiest.
 
 ![AQI Live Data](https://img.shields.io/badge/AQI-Live%20Data-emerald)
